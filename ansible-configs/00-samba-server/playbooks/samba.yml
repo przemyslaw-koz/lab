@@ -1,0 +1,23 @@
+- name: Running Docker Container with Samba Server on HP Thin Client
+  hosts: hpnodes
+  become: true
+  tasks:
+    - name: Create share folder for Samba
+      ansible.builtin.file:
+        path: /srv/samba_share
+        state: directory
+        mode: "0777"
+
+    - name: Create Docker container with Samba
+      community.docker.docker_container:
+        name: samba
+        image: dperson/samba
+        restart_policy: unless-stopped
+        published_ports:
+          - "139:139"
+          - "445:445"
+        volumes:
+          - "/srv/samba_share:/mount"
+        command:
+          -u "{{ samba_user }};{{ samba_pass }}"
+          -s "share;/mount;yes;no;yes"

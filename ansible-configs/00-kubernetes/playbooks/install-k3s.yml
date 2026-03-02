@@ -1,0 +1,6 @@
+---
+- name: Install K3S on thinclient
+  hosts:
+  become: true
+  roles:
+    - k3s

@@ -1,0 +1,78 @@
+---
+- name: Nginx www server configuration with TLS encryption
+  hosts: hpnodes
+  become: true
+  gather_facts: false
+
+  vars:
+    tls_dir: /etc/nginx/ssl/
+    key_file: nginx.key
+    cert_file: nginx.crt
+    conf_file: /etc/nginx/sites-available/default
+    server_name: _
+
+  handlers:
+    - name: Restart Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+
+  tasks:
+    - name: Nginx Installation
+      ansible.builtin.package:
+        name: nginx
+        update_cache: true
+      notify: Restart Nginx
+
+    - name: Creating TLS cert directories
+      ansible.builtin.file:
+        path: "{{ tls_dir }}"
+        state: directory
+        mode: '0750'
+      notify: Restart Nginx
+
+    - name: TLS files copy
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ tls_dir }}"
+        mode: '0600'
+      loop:
+        - "{{ key_file }}"
+        - "{{ cert_file }}"
+      notify: Restart Nginx
+
+    - name: Nginx config template management
+      ansible.builtin.template:
+        src: nginx.conf.j2
+        dest: "{{ conf_file }}"
+        mode: '0644'
+      notify: Restart Nginx
+
+    - name: Configuration
+      ansible.builtin.file:
+        dest: /etc/nginx/sites-enabled/default
+        src: /etc/nginx/sites-available/default
+        state: link
+
+    - name: Copying index.html
+      ansible.builtin.template:
+        src: index.html.j2
+        dest: /usr/share/nginx/html/index.html
+        mode: '0644'
+
+    - name: Restart Nginx with Flush Handler
+      ansible.builtin.meta: flush_handlers
+
+    - name: "Check it! 'https://localhost:443/index.html"
+      delegate_to: localhost
+      become: false
+      ansible.builtin.uri:
+        url: 'https://192.168.1.19:8443/index.html'
+        validate_certs: false
+        return_content: true
+      register: this
+      failed_when: not ('Page is running on' in this.content)
+      tags:
+        - test
+
+...

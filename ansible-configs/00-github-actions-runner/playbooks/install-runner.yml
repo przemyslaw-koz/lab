@@ -1,0 +1,63 @@
+- name: Install GitHub Actions Runner
+  hosts: hpnodes
+  become: true
+  vars:
+    github_runner_dir: "/home/ansiblebot/actions-runner"
+    github_runner_checksum: "sha256:5020da7139d85c776059f351e0de8fdec753affc9c558e892472d43ebeb518f4"
+
+  tasks:
+    - name: Create GitHub Actions Runner Folder
+      ansible.builtin.file:
+        path: "{{ github_runner_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+
+    - name: Download GitHub Actions Runner
+      ansible.builtin.get_url:
+        url: https://github.com/actions/runner/releases/download/v2.325.0/actions-runner-linux-x64-2.325.0.tar.gz
+        dest: "{{ github_runner_dir }}/actions-runner-linux-x64-2.325.0.tar.gz"
+        checksum: "{{ github_runner_checksum }}"
+        mode: "0644"
+
+    - name: Extract GitHub Actions Runner
+      ansible.builtin.unarchive:
+        src: "{{ github_runner_dir }}/actions-runner-linux-x64-2.325.0.tar.gz"
+        dest: "{{ github_runner_dir }}"
+        remote_src: true
+
+    - name: Configure GitHub Actions Runner
+      ansible.builtin.shell: |
+        ./config.sh \
+          --url https://github.com/przemyslaw-koz/kings-and-pigs \
+          --token "{{ github_runner_token }}" \
+          --name "{{ inventory_hostname }}" \
+          --runnergroup "Default" \
+          --work "_work" \
+          --unattended
+      args:
+        chdir: "{{ github_runner_dir }}"
+        creates: "{{ github_runner_dir }}/.runner"
+      become: false
+      become_user: ansiblebot
+      register: runner_config_result
+      changed_when: runner_config_result.rc == 0 and "Authentication successful" in runner_config_result.stdout
+
+    - name: Check if Systemd Service for GitHub Actions Runner exists
+      ansible.builtin.stat:
+        path: "/etc/systemd/system/actions.runner.przemyslaw-koz-kings-and-pigs.{{ inventory_hostname }}.service"
+      register: runner_service_exists
+
+    - name: Install GitHub Actions Runner as Systemd Service
+      args:
+        chdir: "{{ github_runner_dir }}"
+      ansible.builtin.command: ./svc.sh install
+      when: not runner_service_exists.stat.exists
+      changed_when: true
+
+    - name: Start GitHub Actions Runner Service
+      ansible.builtin.systemd:
+        name: "actions.runner.przemyslaw-koz-kings-and-pigs.{{ inventory_hostname }}.service"
+        state: started
+        enabled: true

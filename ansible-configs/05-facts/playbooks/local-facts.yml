@@ -1,0 +1,13 @@
+---
+- name: Test local variables and local facts
+  hosts: all
+  tasks:
+    - name: Display local variable - ansible_local
+      ansible.builtin.debug:
+        var: ansible_local
+
+    - name: Display book title
+      ansible.builtin.debug:
+        msg: "Book title is {{ ansible_local.example.book.title }}"
+
+...

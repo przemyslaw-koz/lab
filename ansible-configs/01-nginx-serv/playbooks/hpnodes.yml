@@ -1,0 +1,36 @@
+---
+- name: Nginx www server configuration
+  hosts: hpnodes
+  become: true
+  gather_facts: false
+
+
+  tasks:
+    - name: Nginx Installation
+      ansible.builtin.package:
+        name: nginx
+        update_cache: true
+
+    - name: Copying nginx config file
+      ansible.builtin.copy:
+        src: nginx.conf
+        dest: /etc/nginx/sites-available/default
+        mode: '0644'
+
+    - name: Configuration
+      ansible.builtin.file:
+        dest: /etc/nginx/sites-enabled/default
+        src: /etc/nginx/sites-available/default
+        state: link
+
+    - name: Copying index.html
+      ansible.builtin.template:
+        src: index.html.j2
+        dest: /usr/share/nginx/html/index.html
+        mode: '0644'
+
+    - name: Nginx restart
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+...
