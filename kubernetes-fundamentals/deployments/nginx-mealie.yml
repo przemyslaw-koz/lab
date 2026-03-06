@@ -19,5 +19,5 @@ spec:
           name: scratch-volume
   volumes:
     - name: scratch-volume
-      emptyDir:
-        sizeLimit: 500Mi
+      persistentVolumeClaim:
+        claimName: mealie-data
