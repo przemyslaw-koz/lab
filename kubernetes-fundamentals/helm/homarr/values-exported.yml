@@ -1,0 +1,139 @@
+additionalObjects: []
+affinity: {}
+autoscaling:
+  enabled: false
+  maxReplicas: 100
+  minReplicas: 1
+  targetCPUUtilizationPercentage: 80
+containerPorts:
+  http:
+    port: 7575
+    protocol: TCP
+database:
+  migrationEnabled: true
+  type: sqlite
+env:
+  AUTH_LDAP_BASE: null
+  AUTH_LDAP_BIND_DN: null
+  AUTH_LDAP_GROUP_CLASS: groupOfUniqueNames
+  AUTH_LDAP_GROUP_FILTER_EXTRA_ARG: null
+  AUTH_LDAP_GROUP_MEMBER_ATTRIBUTE: member
+  AUTH_LDAP_GROUP_MEMBER_USER_ATTRIBUTE: dn
+  AUTH_LDAP_SEARCH_SCOPE: base
+  AUTH_LDAP_URI: null
+  AUTH_LDAP_USER_MAIL_ATTRIBUTE: mail
+  AUTH_LDAP_USERNAME_ATTRIBUTE: uid
+  AUTH_LDAP_USERNAME_FILTER_EXTRA_ARG: null
+  AUTH_LOGOUT_REDIRECT_URL: null
+  AUTH_OIDC_AUTO_LOGIN: "false"
+  AUTH_OIDC_CLIENT_NAME: OIDC
+  AUTH_OIDC_GROUPS_ATTRIBUTE: groups
+  AUTH_OIDC_ISSUER: null
+  AUTH_OIDC_NAME_ATTRIBUTE_OVERWRITE: null
+  AUTH_OIDC_SCOPE_OVERWRITE: openid email profile groups
+  AUTH_PROVIDERS: credentials
+  AUTH_SESSION_EXPIRY_TIME: 30d
+  ENABLE_DNS_CACHING: "false"
+  LOG_LEVEL: info
+  NO_EXTERNAL_CONNECTION: "false"
+  TZ: Europe/Paris
+envSecrets:
+  authLdapCredentials:
+    existingSecret: auth-ldap-secret
+    ldapBindingPassword: bind-password
+  authOidcCredentials:
+    existingSecret: auth-oidc-secret
+    oidcClientId: oidc-client-id
+    oidcClientSecret: oidc-client-secret
+  dbCredentials:
+    dbUrlKey: db-url
+    existingSecret: db-secret
+  dbEncryption:
+    existingSecret: db-encryption
+    key: db-encryption-key
+fullnameOverride: ""
+hostAliases: []
+httproute:
+  enabled: false
+  hostnames:
+  - chart-example.local
+  parentRefs:
+  - name: my-gateway
+    namespace: default
+  rules:
+  - backendRefs:
+    - name: homarr
+      port: 8080
+    filters: []
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+image:
+  pullPolicy: IfNotPresent
+  repository: ghcr.io/homarr-labs/homarr
+  tag: v1.54.0
+imagePullSecrets: []
+ingress:
+  annotations: {}
+  enabled: false
+  hosts:
+  - host: chart-example.local
+    paths:
+    - path: /
+  ingressClassName: ""
+  tls: []
+livenessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /api/health/live
+    port: 7575
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 1
+nameOverride: ""
+nodeSelector: {}
+persistence:
+  homarrDatabase:
+    accessMode: ReadWriteOnce
+    enabled: false
+    mountPath: /appdata
+    name: homarr-database
+    size: 50Mi
+    storageClassName: local-path
+    volumeClaimName: ""
+  homarrTrustedCerts:
+    certificates: null
+    enabled: false
+    existingSecretKeys: null
+    existingSecretName: ""
+    mountPath: /appdata/trusted-certificates
+    type: configmap
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+rbac:
+  enabled: false
+readinessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /api/health/ready
+    port: 7575
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 1
+replicaCount: 1
+resources: {}
+securityContext: {}
+service:
+  enabled: true
+  ipFamilies: []
+  ipFamilyPolicy: SingleStack
+  ports:
+    app:
+      port: 7575
+      protocol: TCP
+      targetPort: http
+  type: ClusterIP
+strategyType: RollingUpdate
+tolerations: []
