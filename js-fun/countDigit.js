@@ -19,13 +19,25 @@ function countDigits(text) {
 }
 
 const isDigit = (char) => char >= "0" && char <= "9";
-const countDigitsSplit = (text) => text.split("").filter(isDigit).length;
+const countDigitsSpread = (text) => [...text].filter(isDigit).length;
+
+const countLetters = (text) =>
+  [...text].filter((char) => !isDigit(char)).length;
+
+const countUppercase = (text) =>
+  [...text]
+    .filter((char) => !isDigit(char))
+    .filter((char) => char.toUpperCase() === char).length;
 
 // Example usage
 const input = "abc123xyz45";
+const input2 = "aBVc123xyz45";
 const result = countDigits(input);
-const res2 = countDigitsSplit(input);
+const res2 = countDigitsSpread(input);
 
 console.log(`Input: ${input}`);
 console.log(`Number of digits: ${result}`);
 console.log(`Number of digits: ${res2}`);
+console.log(`Number of letters: ${countLetters(input)}`);
+console.log(`Number of uppercase letters: ${countUppercase(input)}`);
+console.log(`Number of uppercase letters: ${countUppercase(input2)}`);
