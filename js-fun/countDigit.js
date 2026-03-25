@@ -18,9 +18,8 @@ function countDigits(text) {
   return count;
 }
 
-const countDigitsSplit = (text) => {
-  return text.split("").filter((char) => char >= "0" && char <= "9").length;
-};
+const isDigit = (char) => char >= "0" && char <= "9";
+const countDigitsSplit = (text) => text.split("").filter(isDigit).length;
 
 // Example usage
 const input = "abc123xyz45";
