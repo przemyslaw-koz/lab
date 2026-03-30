@@ -1,6 +1,5 @@
 import {
   Body,
-  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -12,8 +11,8 @@ import {
   Session,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from 'src/guards/auth.guard';
-import { Serialize } from 'src/interceptors/serializae.interceptor';
+import { AuthGuard } from '../guards/auth.guard'
+import { Serialize } from '../interceptors/serializae.interceptor';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { CreateUserDto } from './dtos/create-user.dto';
@@ -55,7 +54,7 @@ export class UsersController {
 
   @Post('/signin')
   async signin(@Body() body: CreateUserDto, @Session() session: any) {
-    const user = await this.authService.singin(body.email, body.password);
+    const user = await this.authService.signin(body.email, body.password);
     session.userId = user.id;
     return user;
   }
