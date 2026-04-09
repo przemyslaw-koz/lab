@@ -4,11 +4,9 @@ metadata:
   name: math-add-job
 spec:
   completions: 3
-  parallelism: 3
   template:
     spec:
       containers:
-        - name: math-add
-          image: ubuntu
-          command: ["expr", "3", "+", "2"]
+        - name: random-error
+          image: kodekloud/random-error
       restartPolicy: Never
