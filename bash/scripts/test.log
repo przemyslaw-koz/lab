@@ -1,0 +1,10 @@
+2023-10-27 10:01:05 INFO  User "admin" logged in successfully.
+2023-10-27 10:02:15 ERROR Database connection failed: timeout.
+2023-10-27 10:02:16 WARNING Retrying connection...
+2023-10-27 10:02:20 INFO  Connection established.
+2023-10-27 10:05:00 WARNING Disk space is running low (15% remaining).
+2023-10-27 10:10:12 ERROR Unauthorized access attempt from IP 192.168.1.50.
+2023-10-27 10:12:00 INFO  Routine backup started.
+2023-10-27 10:12:45 ERROR Backup failed: write permission denied.
+2023-10-27 10:15:30 INFO  System update available.
+2023-10-27 10:20:00 WARNING High CPU usage detected: 92%.
