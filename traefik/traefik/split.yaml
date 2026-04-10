@@ -1,0 +1,28 @@
+http:
+  routers:
+    dashboard:
+      rule: Host(`localhost`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
+      service: api@internal
+    allbackendRouter:
+      rule: "Host(`localhost`) && Path(`/`)"
+      service: allbackend
+    app1Router:
+      rule: "Host(`localhost`) && Path(`/auth`)"
+      service: app1backend
+    app2Router:
+      rule: "Host(`localhost`) && Path(`/app2`)"
+      service: app2backend
+  services:
+    app1backend:
+      loadBalancer:
+        servers: 
+          - url: "https://onet.pl/"
+    app2backend:
+      loadBalancer:
+        servers: 
+          - url: "http://localhost:3333"
+          - url: "http://localhost:4444"
+    allbackend:
+      loadBalancer:
+        servers: 
+          - url: "https://onet.pl/"

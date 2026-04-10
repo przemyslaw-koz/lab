@@ -1,0 +1,12 @@
+#Static configuration
+entrypoints:
+    unsecure:
+        address: :8000
+
+providers:
+    file:
+        filename: split.yaml
+        watch: true
+
+api:
+  dashboard: true

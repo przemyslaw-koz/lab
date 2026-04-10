@@ -1,0 +1,94 @@
+version: '3'
+
+services:
+  traefik:
+    # The latest official supported Traefik docker image
+    image: traefik:v2.3
+    # Enables the Traefik Dashboard and tells Traefik to listen to docker
+    # enable --log.level=INFO so we can see what Traefik is doing in the log files
+    ports:
+      # Exposes port 80 for incomming web requests
+      - "80:80"
+      - "443:443"
+      # The Web UI port http://0.0.0.0:8080 (enabled by --api.insecure=true)
+      - "8080:8080"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik-entrypoints.yml:/etc/traefik/traefik.yml
+    
+
+  # Add the catapp service
+  # catapp:
+  #   # A Random Cat GIF generator application
+  #   image: mikesir87/cats:1.0
+  #   # We set a label to tell Traefik to assign a hostname to the new service
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.middlewares.fwdauth.forwardauth.address=http://localhost:1111/auth"
+  #     - "traefik.http.middlewares.fwdauth.forwardauth.authResponseHeaders=x-api-key"
+  #     - "traefik.http.middlewares.fwdauth.forwardauth.trustForwardHeader=true"
+  #     - "traefik.http.routers.catapp.rule=Host(`catapp.localhost`)"
+  #     - "traefik.http.routers.catapp.entrypoints=web"
+  #     - "traefik.http.routers.catapp.middlewares=fwdauth"
+  #     # - "traefik.http.routers.catapp.middlewares=testHeader"
+  #     - "traefik.http.services.catapp.loadbalancer.server.port=5000"
+  #     #forward auth
+  #     #headers
+  #     - "traefik.http.middlewares.testHeader.headers.customrequestheaders.x-api-key=testapikey"
+  # nodeapp:
+  #   image: nodeapp
+  #   environment:
+  #     - PORT=9999
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.nodeapp.rule=Host(`nodeapp.localhost`)"
+  #     - "traefik.http.routers.nodeapp.entrypoints=web"
+  #     - "traefik.http.routers.nodeapp.middlewares=testHeader"
+  #     # - "traefik.http.routers.nodeapp.middlewares=fwdauth"
+  #     # - "traefik.http.services.nodeapp.loadbalancer.server.port=9999"
+  noapikey:
+    image: simpleapi
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.noapikey.rule=Host(`demo.localhost`) && Path(`/nokey`)"
+      - "traefik.http.routers.noapikey.entrypoints=web"
+  addedkey:
+    image: simpleapi
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.addedkey.rule=Host(`demo.localhost`) && Path(`/withkey`)"
+      - "traefik.http.routers.addedkey.entrypoints=web"
+      - "traefik.http.routers.addedkey.middlewares=testHeader"
+      - "traefik.http.middlewares.testHeader.headers.customrequestheaders.x-api-key=testapikey"
+  missingkey:
+    image: simpleapi
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.missingkey.rule=Host(`demonokeyprovided.localhost`) && Path(`/withkey`)"
+      - "traefik.http.routers.missingkey.entrypoints=web"
+  keyfromchain:
+    image: protectedapi
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.keyfromchain.rule=Host(`demo.localhost`) && Path(`/from/chain`)"
+      - "traefik.http.routers.keyfromchain.entrypoints=web"
+      - "traefik.http.middlewares.tstAuth.forwardauth.address=https://mock-auth-traefik.herokuapp.com/auth"
+      - "traefik.http.routers.keyfromchain.middlewares=secured"
+      - "traefik.http.middlewares.secured.chain.middlewares=testHeader,tstAuth"
+  keyfromchain2:
+    image: protectedapi
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.keyfromchain2.rule=Host(`chainpass.localhost`) && Path(`/from/chain`)"
+      - "traefik.http.routers.keyfromchain2.entrypoints=web"
+      - "traefik.http.routers.keyfromchain2.middlewares=securedv2"
+      - "traefik.http.middlewares.correctHeader.headers.customrequestheaders.x-api-key=correctApiKey"
+      - "traefik.http.middlewares.securedv2.chain.middlewares=correctHeader,tstAuth"
+  keyfromrequest:
+    image: protectedapi
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.keyfromrequest.rule=Host(`demo.localhost`) && Path(`/direct`)"
+      - "traefik.http.routers.keyfromrequest.entrypoints=web"
+      - "traefik.http.routers.keyfromrequest.middlewares=tstAuth"

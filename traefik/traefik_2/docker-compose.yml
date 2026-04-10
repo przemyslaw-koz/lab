@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  traefik:
+    image: traefik
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - proxy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/traefik.yml:/traefik.yml:ro
+      - ./data/config.yml:/config.yml
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.b2bmodal.entrypoints=https"
+      - "traefik.http.routers.b2bmodal.rule=Host(`b2b.example.com`)"
+      - "traefik.http.routers.b2bmodal.middlewares=traefik-auth"
+      - "traefik.http.routers.b2bmodal.middlewares=traefik-https-redirect"
+      - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.b2bmodal.service=api@internal"
+
+networks:
+  proxy:
+    external: true

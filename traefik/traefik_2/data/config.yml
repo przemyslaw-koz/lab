@@ -1,0 +1,43 @@
+http:
+  routers:
+    b2bmodal:
+      entryPoints:
+        - "https"
+      rule: "Host(`b2b.example.com`)"
+      middlewares:
+        - default-headers
+        - addprefix-b2b
+      tls:
+        certResolver: http
+      service: b2bmodal
+
+  services:
+    b2bmodal:
+      loadBalancer:
+        servers:
+          - url: "https://dev-b2b-modal-v1.nate.team"
+        passHostHeader: true
+  middlewares:
+    addprefix-b2b:
+      addPrefix:
+        prefix: "/test"
+
+    default-headers:
+      headers:
+        frameDeny: true
+        sslRedirect: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+    
+    https-redirect:
+      redirectScheme:
+        scheme: https
+
+    secured:
+      chain:
+        middlewares:
+        - default-whitelist
+        - default-headers
