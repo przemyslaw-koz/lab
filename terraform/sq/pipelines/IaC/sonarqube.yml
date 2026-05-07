@@ -1,0 +1,52 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - terraform/sonarqube/**
+      - terraform/modules/**
+      - pipelines/IaC/sonarqube.yml
+
+pool: default-agent-pool
+
+resources:
+  repositories:
+    - repository: DevOps
+      name: DevOps/Devops
+      type: git
+    - repository: shared-resources
+      name: DevOps/shared-resources
+      type: git
+
+parameters:
+  - name: terraformLogLevel
+    type: string
+    default: "ERROR"
+    displayName: 'Terraform Log Level'
+    values:
+      - "TRACE"
+      - "DEBUG"
+      - "INFO"
+      - "WARN"
+      - "ERROR"
+
+stages:
+  - stage: Sonarqube_Test
+    jobs:
+      - template: pipelines/terraform/generic-terraform-pipeline.yml@shared-resources
+        parameters:
+          terraformConfigDirectory: "sonarqube"
+          identifier: "sonarqube_test"
+          terraformWorkspace: "development"
+          terraformLogLevel: "${{parameters.terraformLogLevel}}"
+          ignoreCheckForChange: "yes"
+  - stage: Sonarqube_Prod
+    jobs:
+      - template: pipelines/terraform/generic-terraform-pipeline.yml@shared-resources
+        parameters:
+          terraformConfigDirectory: "sonarqube"
+          identifier: "sonarqube_prod"
+          terraformWorkspace: "prod"
+          terraformLogLevel: "${{parameters.terraformLogLevel}}"
+          ignoreCheckForChange: "yes"

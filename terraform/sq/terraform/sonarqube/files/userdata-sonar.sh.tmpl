@@ -1,0 +1,61 @@
+#!/bin/bash
+set -euo pipefail
+
+LOG="${log_path}"
+mkdir -p "$(dirname "$LOG")"
+touch "$LOG"
+chmod 0644 "$LOG"
+
+exec >>"$LOG" 2>&1
+echo "=== UserData start $(date) ==="
+
+echo "installing packages via dnf"
+dnf -y install amazon-ssm-agent docker postgresql15
+systemctl enable --now amazon-ssm-agent
+systemctl enable --now docker
+
+DB_HOST="${db_host}"
+DB_NAME="${db_name}"
+DB_USER="${db_user}"
+SSM_PASS_KEY="${ssm_pass_key}"
+REGION="${region}"
+ECR_IMAGE="${ecr_image}"
+
+DB_PASS="$(aws ssm get-parameter --name "$SSM_PASS_KEY" --with-decryption --region "$REGION" --query 'Parameter.Value' --output text)"
+JDBC_URL=$(printf 'jdbc:postgresql://%s:5432/%s?sslmode=require' "$DB_HOST" "$DB_NAME")
+
+cat >/etc/sysctl.d/99-sonarqube.conf <<'EOF'
+vm.max_map_count=262144
+EOF
+sysctl -p /etc/sysctl.d/99-sonarqube.conf || true
+
+ECR_REGISTRY="$(echo "$ECR_IMAGE" | cut -d/ -f1)"
+aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+
+docker pull "$ECR_IMAGE"
+
+mkdir -p /var/sonarqube/data /var/sonarqube/extensions /var/sonarqube/logs
+chown -R 1000:1000 /var/sonarqube
+
+if docker ps -a --format '{{.Names}}' | grep -q '^sonarqube$'; then
+  docker rm -f sonarqube || true
+fi
+
+docker run -d --name sonarqube \
+  --restart unless-stopped \
+  -p 9000:9000 \
+  --ulimit nofile=65536:65536 \
+  --ulimit nproc=4096 \
+  -e SONAR_JDBC_URL="$JDBC_URL" \
+  -e SONAR_JDBC_USERNAME="$DB_USER" \
+  -e SONAR_JDBC_PASSWORD="$DB_PASS" \
+  -e SONAR_CE_JAVAOPTS="-Xms1g -Xmx1g" \
+  -e SONAR_SEARCH_JAVAOPTS="-Xms2g -Xmx2g" \
+  -e SONAR_WEB_JAVAOPTS="-Xms512m -Xmx512m" \
+  -v /var/sonarqube/data:/opt/sonarqube/data \
+  -v /var/sonarqube/extensions:/opt/sonarqube/extensions \
+  -v /var/sonarqube/logs:/opt/sonarqube/logs \
+  "$ECR_IMAGE"
+
+echo "SonarQube container started. Listening on port 9000"
+echo "=== UserData end $(date) ==="
