@@ -9,4 +9,4 @@ COPY http_server_app.py .
 
 EXPOSE 5000
 
-CMD ["python", "http_server_app.py"]
+CMD ["python", "counter_metric.py"]
