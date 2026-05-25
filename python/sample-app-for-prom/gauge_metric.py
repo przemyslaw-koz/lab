@@ -5,6 +5,7 @@ from prometheus_client import start_http_server, Gauge
 
 
 REQUEST_IN_PROGRESS = Gauge('requests_in_progress', 'Total number of HTTP requests in progress')
+REQUEST_LAST_EXECUTED = Gauge('request_last_executed', 'Time when request was executed last time.')
 
 
 HOST = os.getenv("HOST", "0.0.0.0")
@@ -20,6 +21,7 @@ class HandleRequests(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write(bytes("<html><head><title>First python Application</title></head><body style='background-color:blue;'><h1>Hello World!</h1></body></html>", "utf-8"))
+        REQUEST_LAST_EXECUTED.set(time.time())
         REQUEST_IN_PROGRESS.dec()
 
 
