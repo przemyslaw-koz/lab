@@ -5,8 +5,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY gauge_metric.py .
+COPY histogram_metric.py .
 
 EXPOSE 5000
 
-CMD ["python", "gauge_metric.py"]
+CMD ["python", "histogram_metric.py"]
