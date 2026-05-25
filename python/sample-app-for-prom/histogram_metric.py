@@ -1,5 +1,6 @@
 import http.server
 import os
+import time
 from prometheus_client import start_http_server, Histogram
 
 
@@ -15,7 +16,7 @@ class HandleRequests(http.server.BaseHTTPRequestHandler):
     @REQUEST_LATENCY_TIME.time()
     def do_GET(self):
         self.send_response(200)
-        time.sleep(2)
+        time.sleep(1)
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write(bytes("<html><head><title>First python Application</title></head><body style='background-color:blue;'><h1>Hello World!</h1></body></html>", "utf-8"))
