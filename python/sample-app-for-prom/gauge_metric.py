@@ -14,15 +14,16 @@ PORT = int(os.getenv("PORT", "5000"))
 
 class HandleRequests(http.server.BaseHTTPRequestHandler):
 
+    @REQUEST_IN_PROGRESS.track_inprogress()
     def do_GET(self):
-        REQUEST_IN_PROGRESS.inc()
+        #REQUEST_IN_PROGRESS.inc()
         time.sleep(10)
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write(bytes("<html><head><title>First python Application</title></head><body style='background-color:blue;'><h1>Hello World!</h1></body></html>", "utf-8"))
         REQUEST_LAST_EXECUTED.set(time.time())
-        REQUEST_IN_PROGRESS.dec()
+        #REQUEST_IN_PROGRESS.dec()
 
 
 if __name__ == "__main__":
