@@ -3,7 +3,7 @@ import os
 from prometheus_client import start_http_server, Counter
 
 
-REQUEST_COUNTER = Counter('app_requests_count', 'Total number of HTTP requests')
+REQUEST_COUNTER = Counter('app_requests_count', 'Total number of HTTP requests', ['python_custom_app', 'endpoint'])
 
 
 HOST = os.getenv("HOST", "0.0.0.0")
@@ -13,7 +13,8 @@ PORT = int(os.getenv("PORT", "5000"))
 class HandleRequests(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
-        REQUEST_COUNTER.inc()
+        #REQUEST_COUNTER.inc()
+        REQUEST_COUNTER.labels('get_funcation', self.endpoint).inc()
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
