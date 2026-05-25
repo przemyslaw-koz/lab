@@ -22,7 +22,7 @@ class HandleRequests(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write(bytes("<html><head><title>First python Application</title></head><body style='background-color:blue;'><h1>Hello World!</h1></body></html>", "utf-8"))
-        REQUEST_LAST_EXECUTED.set(time.time())
+        REQUEST_LAST_EXECUTED.set_to_current_time()
         #REQUEST_IN_PROGRESS.dec()
 
 
