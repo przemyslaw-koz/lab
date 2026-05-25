@@ -5,8 +5,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY counter_metric.py .
+COPY gauge_metric.py .
 
 EXPOSE 5000
 
-CMD ["python", "counter_metric.py"]
+CMD ["python", "gauge_metric.py"]
