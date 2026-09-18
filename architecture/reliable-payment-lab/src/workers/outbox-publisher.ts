@@ -1,7 +1,8 @@
+import { SQSClient } from "@aws-sdk/client-sqs";
+import { SqsQueue } from "../queue/sqs-queue.js";
 import { pool } from "../db/pool.js";
-import { FakeQueue } from "../queue/fake-queue.js";
 
-const queue = new FakeQueue();
+const queue = new SqsQueue(new SQSClient({region: "eu-north-1"}), "https://sqs.eu-north-1.amazonaws.com/567764214274/reliable-payment-requests");
 
 const publish = async () => {
   console.log("Publishing outbox events");
@@ -24,8 +25,8 @@ const publish = async () => {
         await queue.send(row);
         // broker confirmed acceptance
 
-        console.log("💥 CRASH after successful send, before DB update");
-        process.exit(1);
+        // console.log("💥 CRASH after successful send, before DB update");
+        // process.exit(1);
 
         await client.query(
           `
