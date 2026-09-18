@@ -20,22 +20,25 @@ const publish = async () => {
     );
 
     for (const row of result.rows) {
-      const result = await queue.send(row);
-      console.log('===================>', result);
-      
-      if(result.success) {
+      try {
+        await queue.send(row);
+        // broker confirmed acceptance
 
         console.log("💥 CRASH after successful send, before DB update");
         process.exit(1);
 
         await client.query(
-        `
-        UPDATE outbox_events
-        SET published_at = NOW()
-        WHERE id = $1
-        `,
-        [row.id],
-      );}
+          `
+          UPDATE outbox_events
+          SET published_at = NOW()
+          WHERE id = $1
+          `,
+          [row.id],
+        );
+      } catch (error) {
+        // publish failed / outcome potentially unknown
+        console.error("Failed to publish outbox event", row.id, error);
+      }
     }
   } finally {
     client.release();
