@@ -68,7 +68,7 @@ export class PaymentWorker {
       currency: payment.currency,
     });
 
-    console.log(`💾 Worker: UPDATING ${payment.id}`);
+    console.log(`💾 Worker: UPDATING ${payment.id} in DB`);
     await pool.query(
       `
         UPDATE payments
@@ -78,6 +78,9 @@ export class PaymentWorker {
       `,
       [payment.id],
     );
+
+    // console.error(`💥 CRASH after DB update for ${payment.id}`);
+    // process.exit(1);
 
     console.log(`🗑️ Worker: DELETING message ${payment.id}`);
     await this.sqs.send(

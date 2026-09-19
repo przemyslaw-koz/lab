@@ -5,7 +5,7 @@ import { pool } from "../db/pool.js";
 const queue = new SqsQueue(new SQSClient({region: "eu-north-1"}), "https://sqs.eu-north-1.amazonaws.com/567764214274/reliable-payment-requests");
 
 const publish = async () => {
-  console.log("Publishing outbox events");
+  console.log(`📥 Publisher: SELECTING unpublished events`);
 
   const client = await pool.connect();
 
@@ -22,14 +22,15 @@ const publish = async () => {
 
     for (const row of result.rows) {
       try {
+        console.log(`📨 Publisher: SELECTED ${row.id}`);
+        console.log(`📤 Publisher: SENDING ${row.id} to queue`);
         await queue.send(row);
         // broker confirmed acceptance
 
         // console.log("💥 CRASH after successful send, before DB update");
         // process.exit(1);
 
-        console.log("publishing outbox event", row.id);
-
+        console.log(`💾 Publisher: UPDATING ${row.id} in DB`);
         await client.query(
           `
           UPDATE outbox_events
@@ -40,7 +41,7 @@ const publish = async () => {
         );
       } catch (error) {
         // publish failed / outcome potentially unknown
-        console.error("Failed to publish outbox event", row.id, error);
+        console.error(`❌ Publisher: FAILED ${row.id}`, error);
       }
     }
   } finally {
