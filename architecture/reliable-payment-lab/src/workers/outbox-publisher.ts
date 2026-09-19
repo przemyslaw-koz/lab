@@ -28,6 +28,8 @@ const publish = async () => {
         // console.log("💥 CRASH after successful send, before DB update");
         // process.exit(1);
 
+        console.log("publishing outbox event", row.id);
+
         await client.query(
           `
           UPDATE outbox_events
