@@ -34,7 +34,7 @@ export class PaymentWorker {
     const event = JSON.parse(message.Body);
     console.log(`📨 Worker: SELECTED ${event.payment_id}`);
 
-    console.log(`🔄 Worker: UPDATING ${event.payment_id} to PROCESSING`);
+    console.log(`🔄 Worker: ATOMICALLY UPDATING ${event.payment_id} to PROCESSING`);
     const result = await pool.query(
       `
       UPDATE payments
@@ -80,6 +80,9 @@ export class PaymentWorker {
     
       return;
     }
+
+    console.error(`💥 CRASH just before payment capture for ${payment.id}`);
+    process.exit(1);
 
     console.log(`💰 Worker: CAPTURING ${payment.id} via provider`);
     await this.provider.capture({
