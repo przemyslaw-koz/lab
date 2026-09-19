@@ -27,8 +27,8 @@ const publish = async () => {
         await queue.send(row);
         // broker confirmed acceptance
 
-        // console.log("💥 CRASH after successful send, before DB update");
-        // process.exit(1);
+        console.log("💥 CRASH after successful send, before DB update");
+        process.exit(1);
 
         console.log(`💾 Publisher: UPDATING ${row.id} in DB`);
         await client.query(

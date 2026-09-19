@@ -14,6 +14,9 @@ export class FakePaymentProvider implements PaymentProvider {
       return;
     }
 
+    console.log(`⏳ Provider: processing ${payment.id}...`);
+    await new Promise((resolve) => setTimeout(resolve, 5000)); // simulate network delay
+
     console.log(`💰 Provider: CAPTURING ${payment.id}`);
 
     captured.push(payment.id);
