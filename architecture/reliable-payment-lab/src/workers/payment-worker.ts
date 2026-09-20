@@ -1,7 +1,11 @@
-import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand } from "@aws-sdk/client-sqs";
+import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand, ChangeMessageVisibilityCommand } from "@aws-sdk/client-sqs";
 import type { PaymentProvider } from "../provider/payment-provider.js";
 import { FakePaymentProvider } from "../provider/fake-payment-provider.js";
 import { pool } from "../db/pool.js";
+import { randomUUID } from "node:crypto";
+
+const WORKER_ID = `payment-worker-${randomUUID()}`;
+console.log(`👷 Worker: STARTED WITH ID ${WORKER_ID}`);
 
 const QUEUE_URL =
   "https://sqs.eu-north-1.amazonaws.com/567764214274/reliable-payment-requests";
@@ -23,13 +27,30 @@ export class PaymentWorker {
       }),
     );
 
+    private calculateBackoffSeconds(receiveCount: number): number {
+      const baseDelaySeconds = 30;
+      const maxDelaySeconds = 600;
+    
+      return Math.min(
+        baseDelaySeconds * 2 ** (receiveCount - 1),
+        maxDelaySeconds,
+      );
+    }
+
   async processPaymentRequest(): Promise<void> {
     console.log(`📥 Worker: RECEIVING message`);
     const { Messages } = await this.receiveMessage(QUEUE_URL);
     const message = Messages?.[0];
     if (!message?.ReceiptHandle || !message.Body) {
+      console.log(`🔢 Worker: NO VISIBLE MESSAGE FOUND`);
       return;
     }
+
+    const receiveCount = Number(
+      message.Attributes?.ApproximateReceiveCount ?? "1",
+    );
+    
+    console.log(`🔢 Worker: RECEIVE COUNT ${receiveCount}`);
 
     const event = JSON.parse(message.Body);
     console.log(`📨 Worker: SELECTED ${event.payment_id}`);
@@ -38,12 +59,15 @@ export class PaymentWorker {
     const result = await pool.query(
       `
       UPDATE payments
-        SET status = 'PROCESSING'
+        SET status = 'PROCESSING',
+        lease_owner = $2,
+        lease_until = NOW() + INTERVAL '30 seconds'
         WHERE id = $1
-          AND status = 'PENDING'
-        RETURNING id, amount, currency, status;
+          AND (status = 'PENDING'
+          OR (status = 'PROCESSING' AND lease_until < NOW()))
+        RETURNING id, amount, currency, status, lease_until, lease_owner;
       `,
-      [event.payment_id],
+      [event.payment_id, WORKER_ID],
     );
 
     const payment = result.rows[0] ?? null;
@@ -80,16 +104,44 @@ export class PaymentWorker {
     
       return;
     }
+    console.log(
+      `🔒 Worker: CLAIMED ${payment.id}, lease until ${payment.lease_until}`,
+    );
 
-    console.error(`💥 CRASH just before payment capture for ${payment.id}`);
-    process.exit(1);
+    // console.error(`💥 CRASH just before payment capture for ${payment.id}`);
+    // process.exit(1);
 
     console.log(`💰 Worker: CAPTURING ${payment.id} via provider`);
-    await this.provider.capture({
-      id: payment.id,
-      amount: payment.amount,
-      currency: payment.currency,
-    });
+
+    try {
+      await this.provider.capture({
+        id: payment.id,
+        amount: payment.amount,
+        currency: payment.currency,
+      });
+    } catch (error) {
+      const backoffSeconds = this.calculateBackoffSeconds(receiveCount);
+    
+      console.error(
+        `❌ Worker: provider failed for ${payment.id}`,
+        error,
+      );
+    
+      console.log(
+        `⏳ Worker: RETRY ${payment.id} in ${backoffSeconds}s ` +
+        `(receive count=${receiveCount})`,
+      );
+    
+      await this.sqs.send(
+        new ChangeMessageVisibilityCommand({
+          QueueUrl: QUEUE_URL,
+          ReceiptHandle: message.ReceiptHandle,
+          VisibilityTimeout: backoffSeconds,
+        }),
+      );
+    
+      return;
+    }
 
     console.log(`💾 Worker: UPDATING ${payment.id} in DB`);
     await pool.query(

@@ -14,6 +14,9 @@ export class FakePaymentProvider implements PaymentProvider {
       return;
     }
 
+    console.error(`❌ Provider: unavailable BEFORE capture`);
+    throw new Error("Provider unavailable");
+
     console.log(`⏳ Provider: processing ${payment.id}...`);
     await new Promise((resolve) => setTimeout(resolve, 5000)); // simulate network delay
 
