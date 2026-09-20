@@ -1,5 +1,10 @@
 import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand, ChangeMessageVisibilityCommand } from "@aws-sdk/client-sqs";
-import type { PaymentProvider } from "../provider/payment-provider.js";
+import {
+  type PaymentProvider,
+  PermanentProviderError,
+  RetryableProviderError,
+  UnknownOutcomeError,
+} from "../provider/payment-provider.js";
 import { FakePaymentProvider } from "../provider/fake-payment-provider.js";
 import { pool } from "../db/pool.js";
 import { randomUUID } from "node:crypto";
@@ -120,27 +125,111 @@ export class PaymentWorker {
         currency: payment.currency,
       });
     } catch (error) {
-      const backoffSeconds = this.calculateBackoffSeconds(receiveCount);
-    
-      console.error(
-        `❌ Worker: provider failed for ${payment.id}`,
-        error,
-      );
-    
-      console.log(
-        `⏳ Worker: RETRY ${payment.id} in ${backoffSeconds}s ` +
-        `(receive count=${receiveCount})`,
-      );
-    
-      await this.sqs.send(
-        new ChangeMessageVisibilityCommand({
-          QueueUrl: QUEUE_URL,
-          ReceiptHandle: message.ReceiptHandle,
-          VisibilityTimeout: backoffSeconds,
-        }),
-      );
-    
-      return;
+      if (error instanceof RetryableProviderError) {
+        // side effect na pewno NIE zaszedł
+        // retry + exponential backoff
+
+        console.error(
+          `❌ Worker: RETRYABLE PROVIDER ERROR for ${payment.id}`,
+          error,
+        );
+
+        const backoffSeconds = this.calculateBackoffSeconds(receiveCount);
+
+        console.error(
+          `❌ Worker: provider failed for ${payment.id}`,
+          error,
+        );
+
+        console.log(
+          `⏳ Worker: RETRY ${payment.id} in ${backoffSeconds}s ` +
+            `(receive count=${receiveCount})`,
+        );
+
+        await this.sqs.send(
+          new ChangeMessageVisibilityCommand({
+            QueueUrl: QUEUE_URL,
+            ReceiptHandle: message.ReceiptHandle,
+            VisibilityTimeout: backoffSeconds,
+          }),
+        );
+
+        return;
+      }
+
+      if (error instanceof PermanentProviderError) {
+        // operacja definitywnie odrzucona
+        // payment -> FAILED
+        // DeleteMessage
+
+        console.error(
+          `⚠️ Worker: PERMANENT PROVIDER ERROR for ${payment.id}`,
+        );
+
+        await pool.query(
+          `
+            UPDATE payments
+            SET status = 'FAILED',
+                updated_at = NOW(),
+                lease_owner = NULL,
+                lease_until = NULL
+            WHERE id = $1
+          `,
+          [payment.id],
+        );
+
+        await this.sqs.send(
+          new DeleteMessageCommand({
+            QueueUrl: QUEUE_URL,
+            ReceiptHandle: message.ReceiptHandle,
+          }),
+        );
+        
+        console.log(
+          `⚠️ Worker: ${payment.id} marked FAILED; message deleted`,
+        );
+
+        return;
+      }
+
+      if (error instanceof UnknownOutcomeError) {
+        // side effect mógł zajść
+        // payment -> UNKNOWN
+        // NIE robimy blind retry
+
+        console.error(
+          `⚠️ Worker: UNKNOWN OUTCOME for ${payment.id}`,
+        );
+      
+        await pool.query(
+          `
+            UPDATE payments
+            SET status = 'UNKNOWN',
+                lease_owner = NULL,
+                lease_until = NULL,
+                updated_at = NOW()
+            WHERE id = $1
+          `,
+          [payment.id],
+        );
+      
+        await this.sqs.send(
+          new DeleteMessageCommand({
+            QueueUrl: QUEUE_URL,
+            ReceiptHandle: message.ReceiptHandle,
+          }),
+        );
+      
+        console.log(
+          `⚠️ Worker: ${payment.id} marked UNKNOWN; message deleted`,
+        );
+      
+        return;
+      }
+
+      // Nieznany exception naszego kodu?
+      // Nie udawajmy, że wiemy co się stało.
+      throw error;
     }
 
     console.log(`💾 Worker: UPDATING ${payment.id} in DB`);
