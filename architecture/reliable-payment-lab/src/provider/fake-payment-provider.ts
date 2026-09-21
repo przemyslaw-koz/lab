@@ -19,17 +19,17 @@ export class FakePaymentProvider implements PaymentProvider {
     }
 
     console.log(`⏳ Provider: processing ${payment.id}...`);
-    //await new Promise((resolve) => setTimeout(resolve, 5000)); // simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 25_000)); // simulate network delay
 
     console.log(`💰 Provider: CAPTURING ${payment.id}`);
 
     captured.push(payment.id);
     fs.writeFileSync(FILE, JSON.stringify(captured, null, 2));
 
-    console.error(`⏱️ Provider: RESPONSE LOST AFTER CAPTURE for ${payment.id}`);
-    throw new UnknownOutcomeError(
-        `Provider response lost after capture for ${payment.id}`,
-      );
+    //console.error(`⏱️ Provider: RESPONSE LOST AFTER CAPTURE for ${payment.id}`);
+    //throw new UnknownOutcomeError(
+    //    `Provider response lost after capture for ${payment.id}`,
+    //  );
 
     console.log(`✅ Provider: CAPTURED ${payment.id}`);
   }

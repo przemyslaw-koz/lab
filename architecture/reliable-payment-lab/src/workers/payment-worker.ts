@@ -66,7 +66,7 @@ export class PaymentWorker {
       UPDATE payments
         SET status = 'PROCESSING',
         lease_owner = $2,
-        lease_until = NOW() + INTERVAL '30 seconds'
+        lease_until = NOW() + INTERVAL '5 seconds'
         WHERE id = $1
           AND (status = 'PENDING'
           OR (status = 'PROCESSING' AND lease_until < NOW()))
@@ -116,7 +116,58 @@ export class PaymentWorker {
     // console.error(`💥 CRASH just before payment capture for ${payment.id}`);
     // process.exit(1);
 
+    // console.log(`🥶 Worker: FREEZING before provider call...`);
+    // await new Promise((resolve) => setTimeout(resolve, 10000));
+
+    const ownership = await pool.query(
+      `
+        SELECT id
+        FROM payments
+        WHERE id = $1
+          AND status = 'PROCESSING'
+          AND lease_owner = $2
+          AND lease_until > NOW()
+      `,
+      [payment.id, WORKER_ID],
+    );
+    
+    if (ownership.rowCount === 0) {
+      console.warn(
+        `⚠️ Worker: LOST OWNERSHIP of ${payment.id}; skipping provider call`,
+      );
+      return;
+    }
+    
+    console.log(`🔐 Worker: ownership confirmed for ${payment.id}`);
     console.log(`💰 Worker: CAPTURING ${payment.id} via provider`);
+
+    const heartbeat = setInterval(async () => {
+      console.log("❤️ renewing lease");
+
+      const result = await pool.query(
+        `
+          UPDATE payments
+          SET lease_until = NOW() + INTERVAL '5 seconds'
+          WHERE id = $1
+            AND status = 'PROCESSING'
+            AND lease_owner = $2
+            AND lease_until > NOW()
+          RETURNING lease_until
+        `,
+        [payment.id, WORKER_ID],
+      );
+
+      if (result.rowCount === 0) {
+        console.warn(
+          `💔 Worker: heartbeat failed; ownership lost for ${payment.id}`,
+        );
+        return;
+      }
+
+      console.log(
+        `❤️ Worker: lease renewed until ${result.rows[0].lease_until}`,
+      );
+    }, 2000);
 
     try {
       await this.provider.capture({
@@ -230,6 +281,8 @@ export class PaymentWorker {
       // Nieznany exception naszego kodu?
       // Nie udawajmy, że wiemy co się stało.
       throw error;
+    } finally {
+      clearInterval(heartbeat);
     }
 
     console.log(`💾 Worker: UPDATING ${payment.id} in DB`);
@@ -237,7 +290,9 @@ export class PaymentWorker {
       `
         UPDATE payments
         SET status = 'CAPTURED',
-            updated_at = NOW()
+            updated_at = NOW(),
+            lease_owner = NULL,
+            lease_until = NULL
         WHERE id = $1
       `,
       [payment.id],
