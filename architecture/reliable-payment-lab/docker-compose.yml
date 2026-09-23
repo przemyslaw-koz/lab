@@ -16,5 +16,44 @@ services:
       timeout: 5s
       retries: 5
 
+  outbox-publisher:
+    build: .
+    command: ["npx", "tsx", "src/workers/outbox-publisher.ts"]
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: payments
+      DB_PASSWORD: payments
+      DB_NAME: payments
+
+      AWS_REGION: eu-north-1
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  payment-worker:
+    build: .
+    command: ["npx", "tsx", "src/workers/payment-worker.ts"]
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: payments
+      DB_PASSWORD: payments
+      DB_NAME: payments
+
+      AWS_REGION: eu-north-1
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
+    restart: on-failure
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
