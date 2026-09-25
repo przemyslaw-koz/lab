@@ -55,5 +55,14 @@ services:
       postgres:
         condition: service_healthy
 
+  payment-reconciler:
+    build: .
+    command: ["npx", "tsx", "src/workers/payment-reconciler.ts"]
+    environment:
+      DATABASE_URL: postgres://payments:payments@postgres:5432/payments
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:

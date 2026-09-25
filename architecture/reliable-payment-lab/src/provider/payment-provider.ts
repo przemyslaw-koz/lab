@@ -4,8 +4,14 @@ export interface Payment {
   currency: string;
 }
 
+export type ProviderPaymentStatus =
+  | "CAPTURED"
+  | "NOT_FOUND"
+  | "UNKNOWN";
+
 export interface PaymentProvider {
   capture(payment: Payment): Promise<void>;
+  getStatus(payment: Payment): Promise<ProviderPaymentStatus>;
 }
 
 export class RetryableProviderError extends Error {

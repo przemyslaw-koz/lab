@@ -5,6 +5,7 @@ import {
     UnknownOutcomeError,
     RetryableProviderError,
     PermanentProviderError,
+    type ProviderPaymentStatus,
   } from "./payment-provider.js";
 
 const FILE = ".provider-captured-payments.json";
@@ -23,6 +24,14 @@ export class FakePaymentProvider implements PaymentProvider {
     private errorAfterCapture(payment: Payment): Error {
         return new UnknownOutcomeError(`Provider response lost after capture for ${payment.id}`);
     }
+
+  async getStatus(payment: Payment): Promise<ProviderPaymentStatus> {
+    const captured: string[] = fs.existsSync(FILE)
+      ? JSON.parse(fs.readFileSync(FILE, "utf8"))
+      : [];
+
+    return captured.includes(payment.id) ? "CAPTURED" as ProviderPaymentStatus : "NOT_FOUND" as ProviderPaymentStatus;
+  }
 
   async capture(payment: Payment): Promise<void> {
     const shouldFail = Math.random() < 0.10;
