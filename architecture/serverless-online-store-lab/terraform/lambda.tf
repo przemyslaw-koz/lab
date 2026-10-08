@@ -15,8 +15,9 @@ resource "aws_lambda_function" "create_order" {
 
   environment {
     variables = {
-      ENVIRONMENT  = "lab"
-      ORDERS_TABLE = aws_dynamodb_table.orders_table.name
+      ENVIRONMENT           = "lab"
+      ORDERS_TABLE          = aws_dynamodb_table.orders_table.name
+      IDEMPOTENCY_KEY_TABLE = aws_dynamodb_table.order_idempotency.name
     }
   }
 }

@@ -21,3 +21,19 @@ resource "aws_dynamodb_table" "inventory_table" {
     type = "S"
   }
 }
+
+resource "aws_dynamodb_table" "order_idempotency" {
+  name         = "order-idempotency"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "idempotencyKey"
+
+  attribute {
+    name = "idempotencyKey"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "expiresAt"
+    enabled        = true
+  }
+}

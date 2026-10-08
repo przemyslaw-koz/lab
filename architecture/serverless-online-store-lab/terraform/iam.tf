@@ -20,7 +20,8 @@ data "aws_iam_policy_document" "create_order_permissions" {
     ]
 
     resources = [
-      aws_dynamodb_table.orders_table.arn
+      aws_dynamodb_table.orders_table.arn,
+      aws_dynamodb_table.order_idempotency.arn
     ]
   }
 }
