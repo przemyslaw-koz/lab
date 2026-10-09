@@ -16,7 +16,8 @@ data "aws_iam_policy_document" "create_order_permissions" {
     effect = "Allow"
 
     actions = [
-      "dynamodb:PutItem"
+      "dynamodb:PutItem",
+      "dynamodb:GetItem"
     ]
 
     resources = [
