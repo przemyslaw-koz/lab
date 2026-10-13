@@ -39,7 +39,8 @@ resource "aws_lambda_function" "workflow_starter" {
 
   environment {
     variables = {
-      ENVIRONMENT = "lab"
+      ENVIRONMENT       = "lab"
+      STATE_MACHINE_ARN = aws_sfn_state_machine.order_processing.arn
     }
   }
 }
