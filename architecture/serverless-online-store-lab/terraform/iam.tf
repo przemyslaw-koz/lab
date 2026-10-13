@@ -11,6 +11,19 @@ data "aws_iam_policy_document" "assume_role" {
   }
 }
 
+data "aws_iam_policy_document" "sfn_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["states.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
 data "aws_iam_policy_document" "create_order_permissions" {
   statement {
     effect = "Allow"
@@ -35,7 +48,6 @@ data "aws_iam_policy_document" "workflow_starter_permissions" {
       "dynamodb:DescribeStream",
       "dynamodb:GetRecords",
       "dynamodb:GetShardIterator",
-      "states:StartExecution"
     ]
 
     resources = [
@@ -51,6 +63,18 @@ data "aws_iam_policy_document" "workflow_starter_permissions" {
     ]
 
     resources = ["*"]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "states:StartExecution"
+    ]
+
+    resources = [
+      aws_sfn_state_machine.order_processing.arn
+    ]
   }
 }
 
@@ -95,4 +119,9 @@ resource "aws_lambda_permission" "create_order_invoke_permission" {
   principal     = "apigateway.amazonaws.com"
   function_name = aws_lambda_function.create_order.function_name
   source_arn    = "${aws_apigatewayv2_api.serverless_store.execution_arn}/*/*"
+}
+
+resource "aws_iam_role" "order_processing_sfn_role" {
+  name               = "order_processing_sfn_role"
+  assume_role_policy = data.aws_iam_policy_document.sfn_assume_role.json
 }
