@@ -1,5 +1,5 @@
 {
-  "Comment": "Order processin workflow",
+  "Comment": "Order processing workflow",
   "StartAt": "Pass",
   "States": {
     "Pass": {
