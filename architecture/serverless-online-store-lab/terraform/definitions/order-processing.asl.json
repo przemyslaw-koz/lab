@@ -1,0 +1,13 @@
+{
+  "Comment": "Order processin workflow",
+  "StartAt": "Pass",
+  "States": {
+    "Pass": {
+      "Type": "Pass",
+      "Next": "Success"
+    },
+    "Success": {
+      "Type": "Succeed"
+    }
+  }
+}

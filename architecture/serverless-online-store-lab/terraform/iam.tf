@@ -27,6 +27,33 @@ data "aws_iam_policy_document" "create_order_permissions" {
   }
 }
 
+data "aws_iam_policy_document" "workflow_starter_permissions" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "dynamodb:DescribeStream",
+      "dynamodb:GetRecords",
+      "dynamodb:GetShardIterator",
+      "states:StartExecution"
+    ]
+
+    resources = [
+      aws_dynamodb_table.orders_table.stream_arn
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "dynamodb:ListStreams",
+    ]
+
+    resources = ["*"]
+  }
+}
+
 data "aws_iam_policy" "AWSLambdaBasicExecutionRole" {
   arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
@@ -36,14 +63,30 @@ resource "aws_iam_role" "create_order_lambda_role" {
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
+resource "aws_iam_role" "workflow_starter_lambda_role" {
+  name               = "workflow_starter_lambda_role"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
+
 resource "aws_iam_role_policy" "create_order_permissions" {
   name   = "create_order_permissions"
   role   = aws_iam_role.create_order_lambda_role.id
   policy = data.aws_iam_policy_document.create_order_permissions.json
 }
 
+resource "aws_iam_role_policy" "workflow_starter_permissions" {
+  name   = "workflow_starter_permissions"
+  role   = aws_iam_role.workflow_starter_lambda_role.id
+  policy = data.aws_iam_policy_document.workflow_starter_permissions.json
+}
+
 resource "aws_iam_role_policy_attachment" "create_order_lambda_basic_execution" {
   role       = aws_iam_role.create_order_lambda_role.name
+  policy_arn = data.aws_iam_policy.AWSLambdaBasicExecutionRole.arn
+}
+
+resource "aws_iam_role_policy_attachment" "workflow_starter_lambda_basic_execution" {
+  role       = aws_iam_role.workflow_starter_lambda_role.name
   policy_arn = data.aws_iam_policy.AWSLambdaBasicExecutionRole.arn
 }
 
