@@ -20,10 +20,6 @@ export const handler = async (event) => {
 
       const command = new StartExecutionCommand(input);
       try {
-        if (dynamodbRecord.orderId.startsWith("POISON-ORDER")) {
-          throw new Error("Simulated poison record");
-        }
-
         await client.send(command);
       } catch (error) {
         if (error.name === "ExecutionAlreadyExists") {
