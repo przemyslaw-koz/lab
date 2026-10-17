@@ -16,6 +16,12 @@ data "archive_file" "reserve_inventory_lambda_code" {
   source_dir  = "${path.module}/../src/reserve-inventory"
 }
 
+data "archive_file" "fake_payment_provider_lambda_code" {
+  type        = "zip"
+  output_path = "${path.module}/build/fake-payment-provider.zip"
+  source_dir  = "${path.module}/../src/fake-payment-provider"
+}
+
 resource "aws_lambda_function" "create_order" {
   filename         = data.archive_file.create_order_lambda_code.output_path
   function_name    = "create-order-lambda"
@@ -63,6 +69,21 @@ resource "aws_lambda_function" "reserve_inventory" {
     variables = {
       ENVIRONMENT     = "lab"
       INVENTORY_TABLE = aws_dynamodb_table.inventory_table.name
+    }
+  }
+}
+
+resource "aws_lambda_function" "fake_payment_provider" {
+  filename         = data.archive_file.fake_payment_provider_lambda_code.output_path
+  function_name    = "fake-payment-provider"
+  role             = aws_iam_role.fake_payment_provider_lambda_role.arn
+  handler          = "index.handler"
+  source_code_hash = data.archive_file.fake_payment_provider_lambda_code.output_base64sha256
+  runtime          = "nodejs24.x"
+
+  environment {
+    variables = {
+      ENVIRONMENT = "lab"
     }
   }
 }

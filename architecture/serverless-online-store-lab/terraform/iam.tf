@@ -171,6 +171,21 @@ resource "aws_iam_role_policy_attachment" "reserve_inventory_lambda_basic_execut
 }
 
 # -----------------------------------------------------------------------------
+# Lambda fake_payment_provider
+# Role used by lambda to simulate external payment oprovide
+# -----------------------------------------------------------------------------
+
+resource "aws_iam_role" "fake_payment_provider_lambda_role" {
+  name               = "fake_payment_provider_lambda_role"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "fake_payment_provider_lambda_basic_execution" {
+  role       = aws_iam_role.fake_payment_provider_lambda_role.name
+  policy_arn = data.aws_iam_policy.AWSLambdaBasicExecutionRole.arn
+}
+
+# -----------------------------------------------------------------------------
 # Step Functions order-processing
 # Role used by state machine
 # -----------------------------------------------------------------------------
@@ -202,7 +217,8 @@ data "aws_iam_policy_document" "order_processing_sfn_permissions" {
     ]
 
     resources = [
-      aws_lambda_function.reserve_inventory.arn
+      aws_lambda_function.reserve_inventory.arn,
+      aws_lambda_function.fake_payment_provider.arn
     ]
   }
 

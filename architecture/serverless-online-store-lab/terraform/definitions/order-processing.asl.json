@@ -17,6 +17,7 @@
     "MarkInventoryReserved": {
       "Type": "Task",
       "Resource": "arn:aws:states:::dynamodb:updateItem",
+      "ResultPath": null,
       "Parameters": {
         "TableName": "${orders_table_name}",
         "Key": {
@@ -41,7 +42,9 @@
       "Next": "ProcessPayment"
     },
     "ProcessPayment": {
-      "Type": "Pass",
+      "Type": "Task",
+      "Resource": "${fake_payment_provider_lambda_arn}",
+      "ResultPath": "$.payment",
       "Next": "Success"
     },
     "RejectOutOfStock": {
