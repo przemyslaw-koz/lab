@@ -1,0 +1,145 @@
+{
+  "Records": [
+    {
+      "eventID": "event-a",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "eu-north-1",
+      "dynamodb": {
+        "SequenceNumber": "100",
+        "Keys": {
+          "orderId": {
+            "S": "9b3e8ccf-87ab-4983-bdd6-a685598de1e2"
+          }
+        },
+        "NewImage": {
+          "createdAt": {
+            "S": "2026-10-14T14:29:11.953Z"
+          },
+          "orderId": {
+            "S": "9b3e8ccf-87ab-4983-bdd6-a685598de1e2"
+          },
+          "items": {
+            "L": [
+              {
+                "M": {
+                  "quantity": {
+                    "N": "2"
+                  },
+                  "productId": {
+                    "S": "PRODUCT-A"
+                  }
+                }
+              }
+            ]
+          },
+          "userId": {
+            "S": "USER-001"
+          },
+          "status": {
+            "S": "NEW"
+          },
+          "updatedAt": {
+            "S": "2026-10-14T14:29:11.953Z"
+          }
+        },
+        "StreamViewType": "NEW_IMAGE"
+      }
+    },
+    {
+      "eventID": "event-b",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "eu-north-1",
+      "dynamodb": {
+        "SequenceNumber": "200",
+        "Keys": {
+          "orderId": {
+            "S": "INVALID ORDER NAME"
+          }
+        },
+        "NewImage": {
+          "createdAt": {
+            "S": "2026-10-14T14:29:11.953Z"
+          },
+          "orderId": {
+            "S": "INVALID ORDER NAME"
+          },
+          "items": {
+            "L": [
+              {
+                "M": {
+                  "quantity": {
+                    "N": "2"
+                  },
+                  "productId": {
+                    "S": "PRODUCT-A"
+                  }
+                }
+              }
+            ]
+          },
+          "userId": {
+            "S": "USER-001"
+          },
+          "status": {
+            "S": "NEW"
+          },
+          "updatedAt": {
+            "S": "2026-10-14T14:29:11.953Z"
+          }
+        },
+        "StreamViewType": "NEW_IMAGE"
+      }
+    },
+    {
+      "eventID": "event-c",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "eu-north-1",
+      "dynamodb": {
+        "SequenceNumber": "300",
+        "Keys": {
+          "orderId": {
+            "S": "partial-batch-test-c"
+          }
+        },
+        "NewImage": {
+          "createdAt": {
+            "S": "2026-10-14T14:29:11.953Z"
+          },
+          "orderId": {
+            "S": "partial-batch-test-c"
+          },
+          "items": {
+            "L": [
+              {
+                "M": {
+                  "quantity": {
+                    "N": "2"
+                  },
+                  "productId": {
+                    "S": "PRODUCT-A"
+                  }
+                }
+              }
+            ]
+          },
+          "userId": {
+            "S": "USER-001"
+          },
+          "status": {
+            "S": "NEW"
+          },
+          "updatedAt": {
+            "S": "2026-10-14T14:29:11.953Z"
+          }
+        },
+        "StreamViewType": "NEW_IMAGE"
+      }
+    }
+  ]
+}

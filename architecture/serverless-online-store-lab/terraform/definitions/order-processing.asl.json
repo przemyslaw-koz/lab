@@ -1,10 +1,81 @@
 {
   "Comment": "Order processing workflow",
-  "StartAt": "Pass",
+  "StartAt": "ReserveInventory",
   "States": {
-    "Pass": {
+    "ReserveInventory": {
+      "Type": "Task",
+      "Resource": "${reserve_inventory_lambda_arn}",
+      "Next": "MarkInventoryReserved",
+      "Catch": [
+        {
+          "ErrorEquals": ["OutOfStockError"],
+          "ResultPath": null,
+          "Next": "RejectOutOfStock"
+        }
+      ]
+    },
+    "MarkInventoryReserved": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:updateItem",
+      "Parameters": {
+        "TableName": "${orders_table_name}",
+        "Key": {
+          "orderId": {
+            "S.$": "$.orderId"
+          }
+        },
+        "UpdateExpression": "SET #status = :newStatus",
+        "ConditionExpression": "#status = :expectedStatus",
+        "ExpressionAttributeNames": {
+          "#status": "status"
+        },
+        "ExpressionAttributeValues": {
+          ":newStatus": {
+            "S": "INVENTORY_RESERVED"
+          },
+          ":expectedStatus": {
+            "S": "NEW"
+          }
+        }
+      },
+      "Next": "ProcessPayment"
+    },
+    "ProcessPayment": {
       "Type": "Pass",
       "Next": "Success"
+    },
+    "RejectOutOfStock": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:updateItem",
+      "Parameters": {
+        "TableName": "${orders_table_name}",
+        "Key": {
+          "orderId": {
+            "S.$": "$.orderId"
+          }
+        },
+        "UpdateExpression": "SET #status = :newStatus, #reason = :reason",
+        "ConditionExpression": "#status = :expectedStatus",
+        "ExpressionAttributeNames": {
+          "#status": "status",
+          "#reason": "reason"
+        },
+        "ExpressionAttributeValues": {
+          ":newStatus": {
+            "S": "REJECTED"
+          },
+          ":reason": {
+            "S": "OUT_OF_STOCK"
+          },
+          ":expectedStatus": {
+            "S": "NEW"
+          }
+        }
+      },
+      "Next": "Rejected"
+    },
+    "Rejected": {
+      "Type": "Succeed"
     },
     "Success": {
       "Type": "Succeed"

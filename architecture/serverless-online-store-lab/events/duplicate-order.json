@@ -1,0 +1,50 @@
+{
+  "Records": [
+    {
+      "eventID": "6b3b0326bd547da7fe46d26a11160014",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "eu-north-1",
+      "dynamodb": {
+        "Keys": {
+          "orderId": {
+            "S": "9b3e8ccf-87ab-4983-bdd6-a685598de1e2"
+          }
+        },
+        "NewImage": {
+          "createdAt": {
+            "S": "2026-10-14T14:29:11.953Z"
+          },
+          "orderId": {
+            "S": "9b3e8ccf-87ab-4983-bdd6-a685598de1e2"
+          },
+          "items": {
+            "L": [
+              {
+                "M": {
+                  "quantity": {
+                    "N": "2"
+                  },
+                  "productId": {
+                    "S": "PRODUCT-A"
+                  }
+                }
+              }
+            ]
+          },
+          "userId": {
+            "S": "USER-001"
+          },
+          "status": {
+            "S": "NEW"
+          },
+          "updatedAt": {
+            "S": "2026-10-14T14:29:11.953Z"
+          }
+        },
+        "StreamViewType": "NEW_IMAGE"
+      }
+    }
+  ]
+}

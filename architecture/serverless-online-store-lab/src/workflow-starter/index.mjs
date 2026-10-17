@@ -6,13 +6,13 @@ const client = new SFNClient(config);
 
 export const handler = async (event) => {
   console.log(JSON.stringify(event, null, 2));
+  const batchItemFailures = [];
   const records = event.Records;
 
   for (const record of records) {
     if (record.eventName === "INSERT") {
       const dynamodbRecord = unmarshall(record.dynamodb.NewImage);
       const input = {
-        // StartExecutionInput
         stateMachineArn: process.env.STATE_MACHINE_ARN,
         name: dynamodbRecord.orderId,
         input: JSON.stringify(dynamodbRecord),
@@ -20,6 +20,10 @@ export const handler = async (event) => {
 
       const command = new StartExecutionCommand(input);
       try {
+        if (dynamodbRecord.orderId.startsWith("POISON-ORDER")) {
+          throw new Error("Simulated poison record");
+        }
+
         await client.send(command);
       } catch (error) {
         if (error.name === "ExecutionAlreadyExists") {
@@ -28,12 +32,19 @@ export const handler = async (event) => {
           );
           continue;
         }
-        throw error;
+        console.error(
+          `Error thrown for order ${dynamodbRecord.orderId}, adding to batchItemFailures`,
+          error.message,
+        );
+
+        batchItemFailures.push({
+          itemIdentifier: record.dynamodb.SequenceNumber,
+        });
       }
     }
   }
 
   return {
-    batchItemFailures: [],
+    batchItemFailures,
   };
 };
