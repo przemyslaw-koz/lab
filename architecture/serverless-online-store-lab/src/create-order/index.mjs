@@ -57,6 +57,7 @@ export const handler = async (event) => {
     userId: data.userId,
     status: "NEW",
     items: data.items,
+    paymentScenario: data.paymentScenario,
     createdAt,
     updatedAt: createdAt,
   };
@@ -79,33 +80,33 @@ export const handler = async (event) => {
             },
           },
         ],
-      })
+      }),
     );
   } catch (error) {
     const isIdempotencyConflict =
       error.name === "TransactionCanceledException" &&
       error.CancellationReasons?.[0]?.Code === "ConditionalCheckFailed";
-  
+
     if (!isIdempotencyConflict) {
       throw error;
     }
-  
+
     const result = await ddbDocClient.send(
       new GetCommand({
         TableName: idempotencyKeyTableName,
         Key: { idempotencyKey },
         ConsistentRead: true,
-      })
+      }),
     );
-  
+
     const existingRecord = result.Item;
-  
+
     if (!existingRecord) {
       throw new Error(
-        `Idempotency record not found for key: ${idempotencyKey}`
+        `Idempotency record not found for key: ${idempotencyKey}`,
       );
     }
-  
+
     if (existingRecord.requestHash !== requestHash) {
       return {
         statusCode: 409,
@@ -114,7 +115,7 @@ export const handler = async (event) => {
         }),
       };
     }
-  
+
     return {
       statusCode: 202,
       body: JSON.stringify({

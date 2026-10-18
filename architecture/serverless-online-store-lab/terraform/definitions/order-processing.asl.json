@@ -45,7 +45,33 @@
       "Type": "Task",
       "Resource": "${fake_payment_provider_lambda_arn}",
       "ResultPath": "$.payment",
-      "Next": "Success"
+      "Next": "CheckPaymentResult"
+    },
+    "CheckPaymentResult": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.payment.status",
+          "StringEquals": "SUCCEEDED",
+          "Next": "Success"
+        },
+        {
+          "Variable": "$.payment.status",
+          "StringEquals": "DECLINED",
+          "Next": "ReleaseInventory"
+        }
+      ],
+      "Default": "UnexpectedPaymentResult"
+    },
+    "ReleaseInventory": {
+      "Type": "Task",
+      "Resource": "${release_inventory_lambda_arn}",
+      "ResultPath": null,
+      "Next": "Rejected"
+    },
+    "UnexpectedPaymentResult": {
+      "Type": "Fail",
+      "Error": "UnexpectedPaymentResult"
     },
     "RejectOutOfStock": {
       "Type": "Task",

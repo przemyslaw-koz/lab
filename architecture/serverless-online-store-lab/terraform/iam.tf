@@ -186,6 +186,43 @@ resource "aws_iam_role_policy_attachment" "fake_payment_provider_lambda_basic_ex
 }
 
 # -----------------------------------------------------------------------------
+# Lambda release_inventory
+# Role used by lambda to release inventory in dynamodb table
+# -----------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "release_inventory_permissions" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "dynamodb:TransactWriteItems",
+      "dynamodb:UpdateItem"
+    ]
+
+    resources = [
+      aws_dynamodb_table.inventory_table.arn,
+      aws_dynamodb_table.orders_table.arn
+    ]
+  }
+}
+
+resource "aws_iam_role" "release_inventory_lambda_role" {
+  name               = "release_inventory_lambda_role"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
+
+resource "aws_iam_role_policy" "release_inventory_permissions" {
+  name   = "release_inventory_permissions"
+  role   = aws_iam_role.release_inventory_lambda_role.id
+  policy = data.aws_iam_policy_document.release_inventory_permissions.json
+}
+
+resource "aws_iam_role_policy_attachment" "release_inventory_lambda_basic_execution" {
+  role       = aws_iam_role.release_inventory_lambda_role.name
+  policy_arn = data.aws_iam_policy.AWSLambdaBasicExecutionRole.arn
+}
+
+# -----------------------------------------------------------------------------
 # Step Functions order-processing
 # Role used by state machine
 # -----------------------------------------------------------------------------
@@ -218,7 +255,8 @@ data "aws_iam_policy_document" "order_processing_sfn_permissions" {
 
     resources = [
       aws_lambda_function.reserve_inventory.arn,
-      aws_lambda_function.fake_payment_provider.arn
+      aws_lambda_function.fake_payment_provider.arn,
+      aws_lambda_function.release_inventory.arn
     ]
   }
 
