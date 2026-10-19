@@ -66,6 +66,14 @@ resource "aws_lambda_event_source_mapping" "orders_stream_to_workflow_starter" {
       destination_arn = aws_sqs_queue.order_processing_dlq.arn
     }
   }
+
+  filter_criteria {
+    filter {
+      pattern = jsonencode({
+        eventName = ["INSERT"]
+      })
+    }
+  }
 }
 
 # -----------------------------------------------------------------------------
