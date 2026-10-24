@@ -7,13 +7,22 @@ export const handler = async (event) => {
     };
   }
 
-  if (scenario === "ERROR") {
-    throw new Error("Injected payment processing error");
+  if (scenario === "ERROR_TWICE_THEN_SUCCESS") {
+    if (event.retryCount < 2) {
+      const error = new Error("Payment provider temporarily unavailable");
+      error.name = "RetryablePaymentError";
+      throw error;
+    }
+
+    return {
+      status: "SUCCEEDED",
+      paymentId: `fake-${event.orderId}`,
+    };
   }
 
   if (event.paymentScenario === "ERROR") {
     const error = new Error("Payment provider temporarily unavailable");
-    error.name = "PaymentProviderError";
+    error.name = "RetryablePaymentError";
     throw error;
   }
 

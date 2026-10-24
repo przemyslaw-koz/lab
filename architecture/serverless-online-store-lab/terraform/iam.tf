@@ -271,6 +271,18 @@ data "aws_iam_policy_document" "order_processing_sfn_permissions" {
       aws_dynamodb_table.orders_table.arn
     ]
   }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "dynamodb:PutItem"
+    ]
+
+    resources = [
+      aws_dynamodb_table.payments_table.arn
+    ]
+  }
 }
 
 resource "aws_iam_role_policy" "order_processing_sfn_permissions" {

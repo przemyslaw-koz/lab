@@ -39,12 +39,66 @@
           }
         }
       },
+      "Next": "GeneratePaymentId"
+    },
+    "GeneratePaymentId": {
+      "Type": "Pass",
+      "Parameters": {
+        "paymentId.$": "States.UUID()"
+      },
+      "ResultPath": "$.paymentAttempt",
+      "Next": "CreatePaymentAttempt"
+    },
+    "CreatePaymentAttempt": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "Parameters": {
+        "TableName": "${payments_table_name}",
+        "Item": {
+          "orderId": {
+            "S.$": "$.orderId"
+          },
+          "paymentId": {
+            "S.$": "$.paymentAttempt.paymentId"
+          },
+          "status": {
+            "S": "CREATED"
+          }
+        },
+        "ConditionExpression": "attribute_not_exists(orderId) AND attribute_not_exists(paymentId)"
+      },
+      "ResultPath": null,
       "Next": "ProcessPayment"
     },
     "ProcessPayment": {
       "Type": "Task",
       "Resource": "${fake_payment_provider_lambda_arn}",
+      "Parameters": {
+        "orderId.$": "$.orderId",
+        "items.$": "$.items",
+        "paymentScenario.$": "$.paymentScenario",
+        "retryCount.$": "$$.State.RetryCount"
+      },
       "ResultPath": "$.payment",
+
+      "Retry": [
+        {
+          "ErrorEquals": ["RetryablePaymentError"],
+          "IntervalSeconds": 2,
+          "BackoffRate": 2,
+          "MaxAttempts": 3,
+          "JitterStrategy": "FULL"
+        }
+      ],
+
+      "Catch": [
+        {
+          "ErrorEquals": ["RetryablePaymentError"],
+          "ResultPath": null,
+          "Next": "ReleaseInventoryPaymentUnavailable"
+        }
+      ],
+
       "Next": "CheckPaymentResult"
     },
     "CheckPaymentResult": {
@@ -58,14 +112,30 @@
         {
           "Variable": "$.payment.status",
           "StringEquals": "DECLINED",
-          "Next": "ReleaseInventory"
+          "Next": "ReleaseInventoryPaymentDeclined"
         }
       ],
       "Default": "UnexpectedPaymentResult"
     },
-    "ReleaseInventory": {
+    "ReleaseInventoryPaymentDeclined": {
       "Type": "Task",
       "Resource": "${release_inventory_lambda_arn}",
+      "Parameters": {
+        "orderId.$": "$.orderId",
+        "items.$": "$.items",
+        "compensationReason": "PAYMENT_DECLINED"
+      },
+      "ResultPath": null,
+      "Next": "Rejected"
+    },
+    "ReleaseInventoryPaymentUnavailable": {
+      "Type": "Task",
+      "Resource": "${release_inventory_lambda_arn}",
+      "Parameters": {
+        "orderId.$": "$.orderId",
+        "items.$": "$.items",
+        "compensationReason": "PAYMENT_PROVIDER_UNAVAILABLE"
+      },
       "ResultPath": null,
       "Next": "Rejected"
     },

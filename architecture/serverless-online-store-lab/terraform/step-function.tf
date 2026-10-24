@@ -6,5 +6,6 @@ resource "aws_sfn_state_machine" "order_processing" {
     fake_payment_provider_lambda_arn = aws_lambda_function.fake_payment_provider.arn
     release_inventory_lambda_arn     = aws_lambda_function.release_inventory.arn
     orders_table_name                = aws_dynamodb_table.orders_table.name
+    payments_table_name              = aws_dynamodb_table.payments_table.name
   })
 }

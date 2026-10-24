@@ -45,7 +45,7 @@ export const handler = async (event) => {
 
       ExpressionAttributeValues: {
         ":newStatus": "REJECTED",
-        ":reason": "PAYMENT_DECLINED",
+        ":reason": event.compensationReason,
         ":expectedStatus": "INVENTORY_RESERVED",
       },
     },
